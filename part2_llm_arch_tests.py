@@ -1,3 +1,10 @@
+"""Student-facing tests for Part 2 - LLM Architecture.
+
+The fixtures in this module contain only literal state, recorders, and narrow
+scripted collaborators. They intentionally do not include a reference LLM
+implementation. Local expected tensors are hand-computed literals.
+"""
+
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -549,7 +556,7 @@ def test___call__(student_call):
         helper_calls.append(("linear", value.clone(), weights))
         return value * 2.0
 
-    mask = torch.arange(16, dtype=torch.float32).reshape(4, 4)
+    mask = torch.arange(4, dtype=torch.float32).reshape(2, 2)
 
     def scripted_block(value, layer, used_mask):
         block_calls.append((value.clone(), layer, used_mask.clone()))
@@ -575,7 +582,7 @@ def test___call__(student_call):
 
     assert torch.equal(out, 2.0 * (base + 5.0))
     assert [call[1] for call in block_calls] == [0, 1]
-    assert all(torch.equal(call[2], mask[:2, :2].to(torch.float16)) for call in block_calls)
+    assert all(torch.equal(call[2], mask) for call in block_calls)
     assert helper_calls[0][0] == "embedding" and helper_calls[0][2] is embedding_weights
     assert helper_calls[0][3] == torch.float16
     assert [call[0] for call in helper_calls] == ["embedding", "norm", "norm", "linear"]
@@ -606,7 +613,7 @@ def submit___call__(student_call):
         return value + (layer + 1)
 
     fixture = SimpleNamespace(
-        buffers={"mask": _causal_mask(5)},
+        buffers={"mask": _causal_mask(3)},
         params={"embedding": object(), "output": object()},
         dtype=torch.float32,
         num_layers=3,
