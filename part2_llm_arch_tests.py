@@ -535,8 +535,14 @@ def test___init__(student_init):
         torch.isneginf(model.buffers["mask"]),
         torch.triu(torch.ones(5, 5, dtype=torch.bool), diagonal=1),
     )
-    assert torch.equal(model.buffers["rope_w1"][0], torch.ones(2))
-    assert torch.equal(model.buffers["rope_w2"][0], torch.zeros(2))
+    rope_keys = (
+        ("rope_w1", "rope_w2")
+        if {"rope_w1", "rope_w2"}.issubset(model.buffers)
+        else ("rope1", "rope2")
+    )
+    assert all(name in model.buffers for name in rope_keys)
+    assert torch.equal(model.buffers[rope_keys[0]][0], torch.ones(2))
+    assert torch.equal(model.buffers[rope_keys[1]][0], torch.zeros(2))
 
 
 def submit___init__(student_init):
@@ -553,11 +559,16 @@ def submit___init__(student_init):
     model = SimpleNamespace()
     torch.manual_seed(23)
     student_init(model, config)
+    rope_keys = (
+        ("rope_w1", "rope_w2")
+        if {"rope_w1", "rope_w2"}.issubset(model.buffers)
+        else ("rope1", "rope2")
+    )
 
     mugrade.submit([model.num_layers, model.head_dim, model.num_heads, str(model.dtype)])
     mugrade.submit([[name, list(model.params[name].shape)] for name in sorted(model.params)])
     mugrade.submit(torch.isneginf(model.buffers["mask"]).detach().cpu().numpy())
-    mugrade.submit(model.buffers["rope_w2"].detach().cpu().numpy())
+    mugrade.submit(model.buffers[rope_keys[1]].detach().cpu().numpy())
     mugrade.submit(model.params["embedding"][0].detach().cpu().numpy())
 
 
