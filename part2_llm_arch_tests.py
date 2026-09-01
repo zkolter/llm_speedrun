@@ -245,20 +245,28 @@ def test_rope(rope):
     x = torch.tensor(
         [[[[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]]]
     )
+    identity_w1 = torch.ones(2, 4)
+    identity_w2 = torch.zeros(2, 4)
     identity = SimpleNamespace(
         buffers={
-            "rope_w1": torch.ones(2, 4),
-            "rope_w2": torch.zeros(2, 4),
+            "rope1": identity_w1,
+            "rope2": identity_w2,
+            "rope_w1": identity_w1,
+            "rope_w2": identity_w2,
         }
     )
     assert torch.equal(rope(identity, x), x)
 
+    rotation_w1 = torch.zeros(2, 4)
+    rotation_w2 = torch.tensor(
+        [[1.0, -1.0, 1.0, -1.0], [-1.0, 1.0, -1.0, 1.0]]
+    )
     rotation = SimpleNamespace(
         buffers={
-            "rope_w1": torch.zeros(2, 4),
-            "rope_w2": torch.tensor(
-                [[1.0, -1.0, 1.0, -1.0], [-1.0, 1.0, -1.0, 1.0]]
-            ),
+            "rope1": rotation_w1,
+            "rope2": rotation_w2,
+            "rope_w1": rotation_w1,
+            "rope_w2": rotation_w2,
         }
     )
     expected = torch.tensor(
@@ -268,20 +276,34 @@ def test_rope(rope):
     assert out.shape == x.shape
     assert torch.equal(out, expected)
 
-    half = rope(rotation, x.to(torch.float16))
+    half_w1 = rotation_w1.to(torch.float16)
+    half_w2 = rotation_w2.to(torch.float16)
+    half_rotation = SimpleNamespace(
+        buffers={
+            "rope1": half_w1,
+            "rope2": half_w2,
+            "rope_w1": half_w1,
+            "rope_w2": half_w2,
+        }
+    )
+    half = rope(half_rotation, x.to(torch.float16))
     assert half.dtype == torch.float16
     assert torch.equal(half.float(), expected)
 
 
 def submit_rope(rope):
+    rope_w1 = torch.tensor(
+        [[0.5, 0.5, -1.0, -1.0], [1.0, 1.0, 0.25, 0.25]]
+    )
+    rope_w2 = torch.tensor(
+        [[1.0, -1.0, 0.5, -0.5], [-0.5, 0.5, 2.0, -2.0]]
+    )
     fixture = SimpleNamespace(
         buffers={
-            "rope_w1": torch.tensor(
-                [[0.5, 0.5, -1.0, -1.0], [1.0, 1.0, 0.25, 0.25]]
-            ),
-            "rope_w2": torch.tensor(
-                [[1.0, -1.0, 0.5, -0.5], [-0.5, 0.5, 2.0, -2.0]]
-            ),
+            "rope1": rope_w1,
+            "rope2": rope_w2,
+            "rope_w1": rope_w1,
+            "rope_w2": rope_w2,
         }
     )
     x = torch.tensor(
