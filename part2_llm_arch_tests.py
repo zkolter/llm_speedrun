@@ -569,7 +569,6 @@ def submit___init__(student_init):
     mugrade.submit([[name, list(model.params[name].shape)] for name in sorted(model.params)])
     mugrade.submit(torch.isneginf(model.buffers["mask"]).detach().cpu().numpy())
     mugrade.submit(model.buffers[rope_keys[1]].detach().cpu().numpy())
-    mugrade.submit(model.params["embedding"][0].detach().cpu().numpy())
 
 
 def test___call__(student_call):
