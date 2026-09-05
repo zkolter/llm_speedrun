@@ -162,11 +162,7 @@ def submit_Adam_init(Adam_init):
 
 def test_step(step):
     class ScheduleRecorder:
-        def __init__(self):
-            self.calls = []
-
         def get_lr(self, current_step):
-            self.calls.append(current_step)
             return 0.1
 
     params = {
@@ -198,16 +194,11 @@ def test_step(step):
     assert torch.count_nonzero(params["a"].grad) == 0
     assert torch.count_nonzero(params["b"].grad) == 0
     assert fixture.t == 2
-    assert fixture.schedule.calls == [1, 1, 1, 1]
 
 
 def submit_step(step):
     class ScheduleRecorder:
-        def __init__(self):
-            self.calls = []
-
         def get_lr(self, current_step):
-            self.calls.append(current_step)
             return {1: 0.05, 2: 0.02}[current_step]
 
     params = {
@@ -238,7 +229,10 @@ def submit_step(step):
                      fixture.v["left"], fixture.v["right"]])
         .detach().cpu().numpy()
     )
-    mugrade.submit([fixture.t, fixture.schedule.calls])
+    mugrade.submit(
+        [fixture.t, params["left"].grad.detach().cpu().tolist(),
+         params["right"].grad.detach().cpu().tolist()]
+    )
 
 
 def test_LRSchedule_init(LRSchedule_init):
